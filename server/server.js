@@ -12,16 +12,14 @@ app.use(express.json());
 // الاتصال بقاعدة بيانات Neon PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: process.env.NODE_ENV === 'production' 
+    ? { rejectUnauthorized: true } 
+    : { rejectUnauthorized: false }
 });
 
-// التحقق من الاتصال عند تشغيل السيرفر
-pool.connect((err, client, release) => {
-  if (err) {
-    return console.error('❌ خطأ في الاتصال بقاعدة البيانات:', err.stack);
-  }
-  console.log('✅ تم الاتصال بنجاح بقاعدة بيانات Neon السحابية!');
-  release();
+// التعامل مع أخطاء الاتصال غير المتوقعة في العميل
+pool.on('error', (err) => {
+  console.error('❌ خطأ غير متوقع في عميل قاعدة البيانات:', err);
 });
 
 /* ==========================================================================
@@ -30,9 +28,12 @@ pool.connect((err, client, release) => {
 
 // تهيئة أنواع ENUM والجداول والخدمات
 app.get('/api/init-db', async (req, res) => {
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+
     // إنشاء أنواع الـ ENUM في حال عدم وجودها
-    await pool.query(`
+    await client.query(`
       DO $$ BEGIN
         CREATE TYPE user_role AS ENUM ('client', 'therapist', 'driver', 'admin');
       EXCEPTION WHEN duplicate_object THEN null; END $$;
@@ -43,7 +44,7 @@ app.get('/api/init-db', async (req, res) => {
     `);
 
     // إنشاء الجداول
-    await pool.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         full_name VARCHAR(100) NOT NULL,
@@ -78,9 +79,9 @@ app.get('/api/init-db', async (req, res) => {
     `);
 
     // إضافة خدمات أولية إذا كان الجدول فارغاً
-    const checkServices = await pool.query('SELECT COUNT(*) FROM services');
-    if (parseInt(checkServices.rows[0].count) === 0) {
-      await pool.query(`
+    const checkServices = await client.query('SELECT COUNT(*) FROM services');
+    if (parseInt(checkServices.rows[0].count, 10) === 0) {
+      await client.query(`
         INSERT INTO services (title, description, duration_minutes, price) VALUES
         ('مساج استرخائي (Swedish)', 'جلسة مساج ناعم لتخفيف التوتر وإراحة العضلات', 60, 350.00),
         ('مساج الأنسجة العميقة (Deep Tissue)', 'تركيز على طبقات العضلات العميقة لفك التعقدات', 90, 450.00),
@@ -88,10 +89,14 @@ app.get('/api/init-db', async (req, res) => {
       `);
     }
 
+    await client.query('COMMIT');
     res.json({ success: true, message: 'تم تهيئة وتجهيز الجداول والبيانات الأساسية بنجاح!' });
   } catch (err) {
-    console.error(err);
+    await client.query('ROLLBACK');
+    console.error('❌ خطأ أثناء تهيئة قاعدة البيانات:', err);
     res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -108,7 +113,7 @@ app.get('/api/seed-staff', async (req, res) => {
     `);
     res.json({ success: true, message: 'تم إضافة الموظفين التجريبيين بنجاح!' });
   } catch (err) {
-    console.error(err);
+    console.error('❌ خطأ أثناء إضافة الموظفين:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -123,6 +128,7 @@ app.get('/api/services', async (req, res) => {
     const result = await pool.query('SELECT * FROM services ORDER BY id ASC');
     res.json(result.rows);
   } catch (err) {
+    console.error('❌ خطأ في جلب الخدمات:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -131,12 +137,19 @@ app.get('/api/services', async (req, res) => {
 app.post('/api/bookings', async (req, res) => {
   const { full_name, phone, service_id, people_count, booking_date, booking_time, location_address, notes } = req.body;
 
+  if (!full_name || !phone || !service_id || !booking_date || !booking_time || !location_address) {
+    return res.status(400).json({ success: false, error: 'جميع الحقول الأساسية مطلوبة' });
+  }
+
+  const client = await pool.connect();
   try {
-    let userResult = await pool.query('SELECT id FROM users WHERE phone = $1', [phone]);
+    await client.query('BEGIN');
+
+    let userResult = await client.query('SELECT id FROM users WHERE phone = $1', [phone]);
     let userId;
 
     if (userResult.rows.length === 0) {
-      const newUser = await pool.query(
+      const newUser = await client.query(
         'INSERT INTO users (full_name, phone, role) VALUES ($1, $2, $3) RETURNING id',
         [full_name, phone, 'client']
       );
@@ -145,11 +158,13 @@ app.post('/api/bookings', async (req, res) => {
       userId = userResult.rows[0].id;
     }
 
-    const newBooking = await pool.query(
+    const newBooking = await client.query(
       `INSERT INTO bookings (client_id, service_id, people_count, booking_date, booking_time, location_address, notes, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [userId, service_id, people_count || 1, booking_date, booking_time, location_address, notes, 'pending']
+      [userId, service_id, people_count || 1, booking_date, booking_time, location_address, notes || null, 'pending']
     );
+
+    await client.query('COMMIT');
 
     res.status(201).json({
       success: true,
@@ -157,8 +172,11 @@ app.post('/api/bookings', async (req, res) => {
       booking: newBooking.rows[0]
     });
   } catch (err) {
-    console.error(err);
+    await client.query('ROLLBACK');
+    console.error('❌ خطأ في إنشاء الحجز:', err);
     res.status(500).json({ success: false, error: err.message });
+  } finally {
+    client.release();
   }
 });
 
@@ -187,6 +205,7 @@ app.get('/api/admin/bookings', async (req, res) => {
     const result = await pool.query(query);
     res.json(result.rows);
   } catch (err) {
+    console.error('❌ خطأ في جلب حجوزات الإدارة:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -194,9 +213,10 @@ app.get('/api/admin/bookings', async (req, res) => {
 // جلب قائمة الموظفين (معالجات وسائقين)
 app.get('/api/admin/staff', async (req, res) => {
   try {
-    const result = await pool.query("SELECT id, full_name, role FROM users WHERE role IN ('therapist', 'driver')");
+    const result = await pool.query("SELECT id, full_name, role FROM users WHERE role IN ('therapist', 'driver') ORDER BY full_name ASC");
     res.json(result.rows);
   } catch (err) {
+    console.error('❌ خطأ في جلب قائمة الموظفين:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -206,8 +226,12 @@ app.put('/api/admin/bookings/:id/assign', async (req, res) => {
   const { id } = req.params;
   const { therapist_id, driver_id, status } = req.body;
 
+  const parseUUID = (val) => {
+    if (!val || val === 'undefined' || val === 'null' || val.trim() === '') return null;
+    return val;
+  };
+
   try {
-    // 1. التحقق من وجود الحجز المسبق
     const currentBooking = await pool.query('SELECT * FROM bookings WHERE id = $1', [id]);
     if (currentBooking.rows.length === 0) {
       return res.status(404).json({ success: false, error: 'الحجز غير موجود' });
@@ -215,18 +239,10 @@ app.put('/api/admin/bookings/:id/assign', async (req, res) => {
 
     const existing = currentBooking.rows[0];
 
-    // 2. تحديث الحقول فقط في حال تمرير قيم جديدة صحيحة
-    const finalTherapistId = (therapist_id && therapist_id !== 'undefined' && therapist_id !== 'null') 
-      ? therapist_id 
-      : existing.therapist_id;
-
-    const finalDriverId = (driver_id && driver_id !== 'undefined' && driver_id !== 'null') 
-      ? driver_id 
-      : existing.driver_id;
-
+    const finalTherapistId = therapist_id !== undefined ? parseUUID(therapist_id) : existing.therapist_id;
+    const finalDriverId = driver_id !== undefined ? parseUUID(driver_id) : existing.driver_id;
     const finalStatus = status || existing.status;
 
-    // 3. تنفيذ التحديث على قاعدة البيانات
     const updated = await pool.query(
       `UPDATE bookings 
        SET therapist_id = $1, driver_id = $2, status = $3 
@@ -236,13 +252,29 @@ app.put('/api/admin/bookings/:id/assign', async (req, res) => {
 
     res.json({ success: true, booking: updated.rows[0] });
   } catch (err) {
-    console.error('Error updating booking:', err);
+    console.error('❌ خطأ في تحديث الحجز:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// تشغيل السيرفر
+/* ==========================================================================
+   4. تشغيل السيرفر وإغلاق الاتصالات بشكل آمن
+   ========================================================================== */
+
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 السيرفر يعمل الآن على المنفذ: http://localhost:${PORT}`);
 });
+
+// إغلاق الاتصالات بشكل نظيف عند إيقاف السيرفر
+const shutdown = () => {
+  console.log('\n⏳ جاري إغلاق السيرفر واتصالات قاعدة البيانات...');
+  server.close(async () => {
+    await pool.end();
+    console.log('✅ تم إغلاق الاتصالات بنجاح.');
+    process.exit(0);
+  });
+};
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);

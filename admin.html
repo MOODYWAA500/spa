@@ -18,23 +18,31 @@
     ::-webkit-scrollbar-thumb:hover { background: #334155; }
   </style>
 </head>
-<body class="bg-[#070c1a] text-gray-200 min-h-screen flex overflow-x-hidden relative">
+<body class="bg-[#070c1a] text-slate-200 min-h-screen flex flex-col md:flex-row overflow-x-hidden relative selection:bg-blue-600 selection:text-white">
+
+  <!-- خلفية المعاينة المتنقلة والهواتف (Mobile Backdrop) -->
+  <div id="mobileBackdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 hidden md:hidden transition-opacity"></div>
 
   <!-- القائمة الجانبية Side Navigation -->
-  <aside class="w-64 bg-[#0b132b] border-l border-slate-800/80 flex flex-col justify-between hidden md:flex shrink-0">
+  <aside id="sidebar" class="fixed md:static inset-y-0 right-0 z-40 w-64 bg-[#0b132b] border-l border-slate-800/80 flex flex-col justify-between transform translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shrink-0">
     <div>
-      <div class="p-6 flex items-center gap-3 border-b border-slate-800/60">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/20">
-          🪷
+      <div class="p-5 flex items-center justify-between border-b border-slate-800/60">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white text-xl shadow-lg shadow-blue-500/20">
+            🪷
+          </div>
+          <div>
+            <h1 class="font-black text-lg text-white tracking-wide leading-none">Relax</h1>
+            <p class="text-[10px] text-blue-400 font-semibold tracking-wider mt-1">MASSAGE & WELLNESS</p>
+          </div>
         </div>
-        <div>
-          <h1 class="font-black text-lg text-white tracking-wide leading-none">Relax</h1>
-          <p class="text-[10px] text-blue-400 font-semibold tracking-wider mt-1">MASSAGE & WELLNESS</p>
-        </div>
+        <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
       </div>
 
-      <nav class="p-4 space-y-1 text-sm font-semibold">
-        <a href="#" class="flex items-center gap-3 px-4 py-3 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30 transition">
+      <nav class="p-4 space-y-1.5 text-sm font-semibold">
+        <a href="#" class="flex items-center gap-3 px-4 py-3 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30 transition shadow-sm">
           <i class="fa-solid fa-house"></i> الرئيسية
         </a>
         <a href="#" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 rounded-xl transition">
@@ -52,39 +60,44 @@
     <div class="p-4 m-4 rounded-2xl bg-gradient-to-b from-blue-900/30 to-indigo-900/20 border border-blue-500/20 text-center space-y-2">
       <span class="text-2xl">✨</span>
       <p class="text-xs text-blue-200 font-bold">لوحة التحكم السريعة</p>
-      <p class="text-[10px] text-slate-400">إدارة وشاملة لكافة طلبات المساج</p>
+      <p class="text-[10px] text-slate-400 leading-relaxed">إدارة شاملة ومباشرة لكافة طلبات ومواعيد المساج</p>
     </div>
   </aside>
 
   <!-- المحتوى الرئيسي Main Content Area -->
-  <main class="flex-1 flex flex-col min-w-0">
+  <main class="flex-1 flex flex-col min-w-0 w-full">
     
     <!-- الشريط العلوي Top Header -->
-    <header class="h-20 bg-[#0b132b]/80 border-b border-slate-800/80 px-6 flex items-center justify-between gap-4 backdrop-blur-md sticky top-0 z-10">
-      <div class="flex-1 max-w-md relative">
-        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="ابحث باسم العميل، الهاتف، أو المدينة..." 
-               class="w-full bg-[#111a36] border border-slate-700/60 rounded-xl py-2.5 pr-10 pl-4 text-xs text-gray-200 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition">
-        <span class="absolute right-3 top-3 text-slate-400 text-xs"><i class="fa-solid fa-magnifying-glass"></i></span>
+    <header class="h-20 bg-[#0b132b]/90 border-b border-slate-800/80 px-4 md:px-6 flex items-center justify-between gap-4 backdrop-blur-md sticky top-0 z-20">
+      <div class="flex items-center gap-3 flex-1 max-w-md">
+        <button onclick="toggleSidebar()" class="md:hidden p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="relative w-full">
+          <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="ابحث باسم العميل، الهاتف، أو المدينة..." 
+                 class="w-full bg-[#111a36] border border-slate-700/60 rounded-xl py-2.5 pr-10 pl-4 text-xs text-gray-200 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition shadow-inner">
+          <span class="absolute right-3 top-3 text-slate-400 text-xs"><i class="fa-solid fa-magnifying-glass"></i></span>
+        </div>
       </div>
 
-      <div class="flex items-center gap-4">
-        <button onclick="fetchAdminData()" class="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center gap-2">
-          <i class="fa-solid fa-rotate-right"></i> <span>تحديث البيانات</span>
+      <div class="flex items-center gap-3">
+        <button onclick="fetchAdminData()" class="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 text-xs font-bold px-3.5 py-2.5 rounded-xl transition flex items-center gap-2 active:scale-95">
+          <i class="fa-solid fa-rotate-right"></i> <span class="hidden sm:inline">تحديث البيانات</span>
         </button>
       </div>
     </header>
 
     <!-- محتوى لوحة التحكم Dashboard Content -->
-    <div class="p-6 space-y-6 overflow-y-auto">
+    <div class="p-4 md:p-6 space-y-6 overflow-y-auto">
 
       <!-- بطاقات الإحصائيات Stat Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <div class="bg-[#0d1733] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden">
           <div>
             <p class="text-[11px] font-semibold text-slate-400">إجمالي الحجوزات</p>
-            <p id="statTotal" class="text-2xl font-black text-white">0</p>
+            <p id="statTotal" class="text-2xl font-black text-white mt-1">0</p>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-lg">
+          <div class="w-11 h-11 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center text-lg border border-blue-500/20">
             <i class="fa-solid fa-calendar-check"></i>
           </div>
         </div>
@@ -92,9 +105,9 @@
         <div class="bg-[#0d1733] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden">
           <div>
             <p class="text-[11px] font-semibold text-slate-400">المواعيد المكتملة</p>
-            <p id="statCompleted" class="text-2xl font-black text-emerald-400">0</p>
+            <p id="statCompleted" class="text-2xl font-black text-emerald-400 mt-1">0</p>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg">
+          <div class="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg border border-emerald-500/20">
             <i class="fa-solid fa-circle-check"></i>
           </div>
         </div>
@@ -102,9 +115,9 @@
         <div class="bg-[#0d1733] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden">
           <div>
             <p class="text-[11px] font-semibold text-slate-400">مدفوعة</p>
-            <p id="statPaid" class="text-2xl font-black text-emerald-400">0</p>
+            <p id="statPaid" class="text-2xl font-black text-emerald-400 mt-1">0</p>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg">
+          <div class="w-11 h-11 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg border border-emerald-500/20">
             <i class="fa-solid fa-credit-card"></i>
           </div>
         </div>
@@ -112,9 +125,9 @@
         <div class="bg-[#0d1733] border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between shadow-lg relative overflow-hidden">
           <div>
             <p class="text-[11px] font-semibold text-slate-400">غير مدفوعة</p>
-            <p id="statUnpaid" class="text-2xl font-black text-rose-400">0</p>
+            <p id="statUnpaid" class="text-2xl font-black text-rose-400 mt-1">0</p>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-lg">
+          <div class="w-11 h-11 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-lg border border-rose-500/20">
             <i class="fa-solid fa-clock"></i>
           </div>
         </div>
@@ -122,17 +135,17 @@
 
       <!-- جدول الحجوزات الرئيسي -->
       <div class="bg-[#0d1733] border border-slate-800/80 rounded-2xl shadow-xl overflow-hidden">
-        <div class="p-5 border-b border-slate-800/80 flex justify-between items-center bg-[#0b132b]/50">
+        <div class="p-5 border-b border-slate-800/80 flex flex-col sm:flex-row justify-between sm:items-center gap-2 bg-[#0b132b]/50">
           <div>
             <h2 class="font-bold text-base text-white flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> إدارة الحجوزات
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span> إدارة الحجوزات
             </h2>
             <p class="text-xs text-slate-400 mt-0.5">عند تحديث أي حالة سيتم إرسال تنبيه مباشر إلى حساب العميل</p>
           </div>
         </div>
 
         <div class="overflow-x-auto">
-          <table class="w-full text-right text-xs">
+          <table class="w-full text-right text-xs whitespace-nowrap">
             <thead>
               <tr class="bg-[#111a36] text-slate-400 font-semibold border-b border-slate-800/80 uppercase">
                 <th class="p-4">رقم الحجز</th>
@@ -155,18 +168,18 @@
   </main>
 
   <!-- MODAL: نافذة التفاصيل الكاملة -->
-  <div id="detailsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+  <div id="detailsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 transition-all">
     <div class="bg-[#0d1733] border border-slate-700 w-full max-w-2xl rounded-3xl p-6 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
       
       <!-- Modal Header -->
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-        <div class="flex items-center gap-2">
-          <span class="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-sm">
+        <div class="flex items-center gap-2.5">
+          <span class="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-sm border border-blue-500/30">
             <i class="fa-solid fa-user-gear"></i>
           </span>
           <h3 class="text-base font-bold text-white">تفاصيل الطلب والعميل الكاملة</h3>
         </div>
-        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center">
+        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
@@ -174,6 +187,7 @@
       <!-- Modal Content Body -->
       <div class="space-y-4 text-xs">
         
+        <!-- معلومات العميل والرمز السري -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 p-3.5 bg-[#111a36] rounded-2xl border border-slate-800">
           <div>
             <span class="text-slate-400 text-[10px] block mb-0.5">اسم العميل:</span>
@@ -181,14 +195,15 @@
           </div>
           <div>
             <span class="text-slate-400 text-[10px] block mb-0.5">رقم الجوال:</span>
-            <span id="modalClientPhone" class="font-bold text-blue-400 text-sm dir-ltr">--</span>
+            <span id="modalClientPhone" class="font-bold text-blue-400 text-sm dir-ltr inline-block">--</span>
           </div>
           <div>
             <span class="text-amber-400 text-[10px] block mb-0.5"><i class="fa-solid fa-key ml-1"></i>الرمز السري (PIN):</span>
-            <span id="modalPinCode" class="font-mono font-extrabold text-amber-300 text-base bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">----</span>
+            <span id="modalPinCode" class="font-mono font-extrabold text-amber-300 text-base bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30 inline-block">----</span>
           </div>
         </div>
 
+        <!-- العنوان والموقع -->
         <div class="p-3.5 bg-[#111a36] rounded-2xl border border-slate-800 space-y-2">
           <h4 class="font-bold text-blue-300 flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
             <i class="fa-solid fa-map-location-dot"></i> بيانات العنوان والموقع الجغرافي
@@ -199,14 +214,15 @@
             <div><span class="text-slate-500">الشارع:</span> <strong id="modalStreet" class="text-white">--</strong></div>
             <div><span class="text-slate-500">رقم المنزل/الفيلا:</span> <strong id="modalHouse" class="text-white">--</strong></div>
           </div>
-          <div class="pt-2 border-t border-slate-800/60 flex justify-between items-center">
+          <div class="pt-2 border-t border-slate-800/60 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <span class="text-[11px] text-slate-400" id="modalFullAddress">--</span>
-            <a id="modalMapLink" href="#" target="_blank" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-md">
+            <a id="modalMapLink" href="#" target="_blank" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[11px] font-bold flex items-center gap-1.5 shadow-md transition shrink-0">
               <i class="fa-solid fa-arrow-up-right-from-square"></i> فتح موقع Google Maps
             </a>
           </div>
         </div>
 
+        <!-- تفاصيل الخدمة والموعد -->
         <div class="p-3.5 bg-[#111a36] rounded-2xl border border-slate-800 space-y-2">
           <h4 class="font-bold text-blue-300 flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
             <i class="fa-solid fa-spa"></i> تفاصيل الخدمة والموعد
@@ -220,6 +236,7 @@
           </div>
         </div>
 
+        <!-- التعيين وحالة الحجز -->
         <div class="p-3.5 bg-[#111a36] rounded-2xl border border-slate-800 space-y-3">
           <h4 class="font-bold text-blue-300 flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
             <i class="fa-solid fa-user-gear"></i> تعيين الموظفات والسائق وحالة الدفع والطلب
@@ -227,30 +244,33 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">اختر المعالجة:</label>
-              <select id="modalTherapistSelect" class="w-full bg-[#0d1733] border border-slate-700 rounded-xl p-2 text-xs text-white">
+              <select id="modalTherapistSelect" class="w-full bg-[#0d1733] border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:border-blue-500 outline-none">
                 <option value="">-- اختر المعالجة --</option>
                 <option value="سارة أحمد">سارة أحمد</option>
                 <option value="مريم علي">مريم علي</option>
+                <option value="نورة العتيبي">نورة العتيبي</option>
+                <option value="ليندا كيم">ليندا كيم</option>
               </select>
             </div>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">اختر السائق:</label>
-              <select id="modalDriverSelect" class="w-full bg-[#0d1733] border border-slate-700 rounded-xl p-2 text-xs text-white">
+              <select id="modalDriverSelect" class="w-full bg-[#0d1733] border border-slate-700 rounded-xl p-2.5 text-xs text-white focus:border-blue-500 outline-none">
                 <option value="">-- اختر السائق --</option>
                 <option value="أحمد محمود">أحمد محمود</option>
                 <option value="خالد عبدالله">خالد عبدالله</option>
+                <option value="محمد السعيد">محمد السعيد</option>
               </select>
             </div>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">حالة الدفع:</label>
-              <select id="modalPaymentSelect" class="w-full bg-[#0d1733] border border-slate-700 rounded-xl p-2 text-xs text-white font-bold">
+              <select id="modalPaymentSelect" class="w-full bg-[#0d1733] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-bold focus:border-blue-500 outline-none">
                 <option value="unpaid">لم يتم الدفع ⏳</option>
                 <option value="paid">تم الدفع 💳</option>
               </select>
             </div>
             <div>
               <label class="block text-[11px] text-slate-400 mb-1">حالة الطلب:</label>
-              <select id="modalStatusSelect" class="w-full bg-[#0d1733] border border-slate-700 rounded-xl p-2 text-xs text-white font-bold">
+              <select id="modalStatusSelect" class="w-full bg-[#0d1733] border border-slate-700 rounded-xl p-2.5 text-xs text-white font-bold focus:border-blue-500 outline-none">
                 <option value="pending">معلق (Pending)</option>
                 <option value="assigned">تم التعيين (Assigned)</option>
                 <option value="on_the_way">في الطريق (On The Way)</option>
@@ -261,13 +281,18 @@
               </select>
             </div>
           </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">ملاحظات إضافية لإشعار العميل (اختياري):</label>
+            <input type="text" id="modalCustomNote" placeholder="مثال: سيكون الفريق لديك خلال 15 دقيقة..." 
+                   class="w-full bg-[#0d1733] border border-slate-700 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 outline-none">
+          </div>
         </div>
 
       </div>
 
       <div class="flex justify-end gap-3 border-t border-slate-800 pt-3">
-        <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 text-slate-300 hover:text-white rounded-xl text-xs font-bold">إغلاق</button>
-        <button onclick="saveModalChanges()" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30 flex items-center gap-1.5">
+        <button onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition">إغلاق</button>
+        <button onclick="saveModalChanges()" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30 flex items-center gap-1.5 transition active:scale-95">
           <i class="fa-solid fa-paper-plane"></i> حفظ وإرسال التنبيه للعميل
         </button>
       </div>
@@ -279,39 +304,105 @@
     let allBookings = [];
     let activeBookingId = null;
 
+    // القائمة الافتراضية للنسخ الاحتياطي والاختبار
+    const mockBookings = [
+      {
+        id: "1001",
+        client_name: "عبدالله الشمري",
+        client_phone: "0501234567",
+        pin_code: "4829",
+        city: "الرياض",
+        district: "النعيم",
+        street: "شارع الملك فهد",
+        houseNo: "فيلا 12",
+        service_title: "جلسة المساج السويدي الملكي",
+        people_count: 2,
+        service_price: 450,
+        booking_date: "2026-10-06",
+        booking_time: "06:00 م",
+        location_address: "الرياض - حي النعيم - شارع الملك فهد - فيلا 12",
+        payment_status: "paid",
+        status: "assigned",
+        therapist_name: "سارة أحمد",
+        driver_name: "خالد عبدالله"
+      },
+      {
+        id: "1002",
+        client_name: "سارة الخالدي",
+        client_phone: "0559876543",
+        pin_code: "1942",
+        city: "جدة",
+        district: "الشاطئ",
+        street: "طريق الكورنيش",
+        houseNo: "برج 4 - شقة 102",
+        service_title: "جلسة المساج العلاجي العميق",
+        people_count: 1,
+        service_price: 300,
+        booking_date: "2026-10-07",
+        booking_time: "08:30 م",
+        location_address: "جدة - حي الشاطئ - طريق الكورنيش - برج 4",
+        payment_status: "unpaid",
+        status: "pending",
+        therapist_name: "",
+        driver_name: ""
+      }
+    ];
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('mobileBackdrop');
+      sidebar.classList.toggle('translate-x-full');
+      backdrop.classList.toggle('hidden');
+    }
+
     async function fetchAdminData() {
       let localBookings = [];
 
       try {
-        const localSession = localStorage.getItem('spa_user_session');
-        if (localSession) {
-          const parsed = JSON.parse(localSession);
-          if (parsed && parsed.bookingsList) {
-            localBookings = parsed.bookingsList.map(b => ({
-              id: b.id,
-              client_name: parsed.clientInfo ? parsed.clientInfo.name : 'عميل جديد',
-              client_phone: parsed.clientInfo ? parsed.clientInfo.phone : '-',
-              pin_code: parsed.registeredPin || '----',
-              city: parsed.clientInfo ? parsed.clientInfo.city : 'غير محدد',
-              district: parsed.clientInfo ? parsed.clientInfo.district : 'غير محدد',
-              street: parsed.clientInfo ? parsed.clientInfo.street : 'غير محدد',
-              houseNo: parsed.clientInfo ? parsed.clientInfo.houseNo : 'غير محدد',
-              service_title: b.service_title,
-              people_count: b.people_count || 1,
-              service_price: b.total_price || 0,
-              booking_date: b.booking_date,
-              booking_time: b.booking_time,
-              location_address: b.address,
-              payment_status: b.payment_status || 'unpaid',
-              status: b.status || 'pending'
-            }));
+        // 1. فحص ما إذا كان هناك مفتاح حجوزات عامة spa_bookings
+        const globalBookings = localStorage.getItem('spa_bookings');
+        if (globalBookings) {
+          localBookings = JSON.parse(globalBookings);
+        } else {
+          // 2. البحث في الجلسة الفردية spa_user_session
+          const localSession = localStorage.getItem('spa_user_session');
+          if (localSession) {
+            const parsed = JSON.parse(localSession);
+            if (parsed && parsed.bookingsList) {
+              localBookings = parsed.bookingsList.map(b => ({
+                id: b.id,
+                client_name: parsed.clientInfo ? parsed.clientInfo.name : (b.client_name || 'عميل جديد'),
+                client_phone: parsed.clientInfo ? parsed.clientInfo.phone : (b.client_phone || '-'),
+                pin_code: parsed.registeredPin || b.pin_code || '----',
+                city: parsed.clientInfo ? parsed.clientInfo.city : (b.city || 'غير محدد'),
+                district: parsed.clientInfo ? parsed.clientInfo.district : (b.district || 'غير محدد'),
+                street: parsed.clientInfo ? parsed.clientInfo.street : (b.street || 'غير محدد'),
+                houseNo: parsed.clientInfo ? parsed.clientInfo.houseNo : (b.houseNo || 'غير محدد'),
+                service_title: b.service_title,
+                people_count: b.people_count || 1,
+                service_price: b.total_price || b.service_price || 0,
+                booking_date: b.booking_date,
+                booking_time: b.booking_time,
+                location_address: b.address || `${b.city || ''} ${b.district || ''}`,
+                payment_status: b.payment_status || 'unpaid',
+                status: b.status || 'pending',
+                therapist_name: b.therapist_name || '',
+                driver_name: b.driver_name || ''
+              }));
+            }
           }
         }
       } catch (e) {
-        console.warn('LocalStorage error:', e);
+        console.warn('LocalStorage Read Error:', e);
       }
 
-      allBookings = localBookings;
+      // إذا كانت التخزينات فارغة، نستخدم بيانات المعاينة الافتراضية
+      if (!localBookings || localBookings.length === 0) {
+        allBookings = mockBookings;
+      } else {
+        allBookings = localBookings;
+      }
+
       updateStats(allBookings);
       renderBookings(allBookings);
     }
@@ -327,28 +418,30 @@
       const tbody = document.getElementById('bookingsTableBody');
 
       if (!bookings || bookings.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-slate-400">لا توجد حجوزات مسجلة حتى الآن</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-12 text-slate-400">لا توجد حجوزات مسجلة مطابقة للبحث</td></tr>`;
         return;
       }
 
       tbody.innerHTML = bookings.map(b => `
-        <tr class="hover:bg-[#111a36]/50 transition border-b border-slate-800/40">
+        <tr class="hover:bg-[#111a36]/60 transition border-b border-slate-800/40">
           <td class="p-4 font-bold text-blue-400">#${b.id}</td>
-          <td class="p-4 font-bold text-white">${b.client_name}</td>
-          <td class="p-4 text-blue-300 font-mono" dir="ltr">${b.client_phone}</td>
-          <td class="p-4 text-slate-300">${b.service_title} (${b.people_count} أفراد)</td>
-          <td class="p-4 text-amber-400">${b.booking_date} | ${b.booking_time}</td>
+          <td class="p-4 font-bold text-white">${b.client_name || 'غير معروف'}</td>
+          <td class="p-4 text-blue-300 font-mono dir-ltr">${b.client_phone || '-'}</td>
+          <td class="p-4 text-slate-300">${b.service_title} <span class="text-slate-500">(${b.people_count} أفراد)</span></td>
+          <td class="p-4 text-amber-400 font-medium">${b.booking_date || ''} | ${b.booking_time || ''}</td>
           <td class="p-4">
             ${b.payment_status === 'paid' 
-              ? '<span class="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-lg text-[10px] font-bold">تم الدفع 💳</span>'
-              : '<span class="px-2.5 py-1 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded-lg text-[10px] font-bold">لم يتم الدفع ⏳</span>'
+              ? '<span class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg text-[10px] font-bold">تم الدفع 💳</span>'
+              : '<span class="px-2.5 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg text-[10px] font-bold">لم يتم الدفع ⏳</span>'
             }
           </td>
           <td class="p-4">
-            <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30">${getStatusArabicText(b.status)}</span>
+            <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${getStatusStyle(b.status)}">
+              ${getStatusArabicText(b.status)}
+            </span>
           </td>
           <td class="p-4 text-center">
-            <button onclick="openModal('${b.id}')" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold flex items-center gap-1.5 mx-auto shadow-md transition">
+            <button onclick="openModal('${b.id}')" class="px-3.5 py-1.5 bg-blue-600/90 hover:bg-blue-500 text-white rounded-xl font-bold flex items-center gap-1.5 mx-auto shadow-md transition active:scale-95">
               <i class="fa-solid fa-eye"></i> التفاصيل والتنبيه
             </button>
           </td>
@@ -356,16 +449,26 @@
       `).join('');
     }
 
+    function getStatusStyle(status) {
+      switch(status) {
+        case 'completed': return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30';
+        case 'cancelled': return 'bg-rose-500/10 text-rose-400 border border-rose-500/30';
+        case 'in_progress': return 'bg-purple-500/10 text-purple-400 border border-purple-500/30';
+        case 'on_the_way': return 'bg-amber-500/10 text-amber-400 border border-amber-500/30';
+        default: return 'bg-blue-500/10 text-blue-400 border border-blue-500/30';
+      }
+    }
+
     function getStatusArabicText(status) {
       switch(status) {
         case 'pending': return 'معلق ⏳';
-        case 'assigned': return 'تم التعيين 👩‍⚕️';
+        case 'assigned': return 'تم التعيين 👩‍‍⚕️';
         case 'on_the_way': return 'في الطريق 🚗';
         case 'arrived': return 'وصل للعنوان 📍';
         case 'in_progress': return 'جاري الجلسة 🪷';
         case 'completed': return 'مكتمل ✅';
         case 'cancelled': return 'ملغي ❌';
-        default: return status;
+        default: return status || 'معلق';
       }
     }
 
@@ -375,27 +478,32 @@
 
       activeBookingId = bookingId;
 
-      document.getElementById('modalClientName').innerText = booking.client_name;
-      document.getElementById('modalClientPhone').innerText = booking.client_phone;
-      document.getElementById('modalPinCode').innerText = booking.pin_code;
+      document.getElementById('modalClientName').innerText = booking.client_name || '--';
+      document.getElementById('modalClientPhone').innerText = booking.client_phone || '--';
+      document.getElementById('modalPinCode').innerText = booking.pin_code || '----';
       
-      document.getElementById('modalCity').innerText = booking.city;
-      document.getElementById('modalDistrict').innerText = booking.district;
-      document.getElementById('modalStreet').innerText = booking.street;
-      document.getElementById('modalHouse').innerText = booking.houseNo;
-      document.getElementById('modalFullAddress').innerText = booking.location_address;
+      document.getElementById('modalCity').innerText = booking.city || '--';
+      document.getElementById('modalDistrict').innerText = booking.district || '--';
+      document.getElementById('modalStreet').innerText = booking.street || '--';
+      document.getElementById('modalHouse').innerText = booking.houseNo || '--';
+      
+      const fullAddr = booking.location_address || `${booking.city || ''} ${booking.district || ''} ${booking.street || ''}`;
+      document.getElementById('modalFullAddress').innerText = fullAddr || '--';
 
-      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.location_address)}`;
+      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddr)}`;
       document.getElementById('modalMapLink').href = googleMapsUrl;
 
-      document.getElementById('modalServiceTitle').innerText = booking.service_title;
-      document.getElementById('modalDate').innerText = booking.booking_date;
-      document.getElementById('modalTime').innerText = booking.booking_time;
-      document.getElementById('modalPeople').innerText = `${booking.people_count} شخص`;
-      document.getElementById('modalTotalPrice').innerText = `${booking.service_price} ر.س`;
+      document.getElementById('modalServiceTitle').innerText = booking.service_title || '--';
+      document.getElementById('modalDate').innerText = booking.booking_date || '--';
+      document.getElementById('modalTime').innerText = booking.booking_time || '--';
+      document.getElementById('modalPeople').innerText = `${booking.people_count || 1} شخص`;
+      document.getElementById('modalTotalPrice').innerText = `${booking.service_price || 0} ر.س`;
 
+      document.getElementById('modalTherapistSelect').value = booking.therapist_name || '';
+      document.getElementById('modalDriverSelect').value = booking.driver_name || '';
       document.getElementById('modalPaymentSelect').value = booking.payment_status || 'unpaid';
       document.getElementById('modalStatusSelect').value = booking.status || 'pending';
+      document.getElementById('modalCustomNote').value = '';
 
       document.getElementById('detailsModal').classList.remove('hidden');
     }
@@ -409,29 +517,46 @@
       const status = document.getElementById('modalStatusSelect').value;
       const therapistName = document.getElementById('modalTherapistSelect').value;
       const driverName = document.getElementById('modalDriverSelect').value;
+      const customNote = document.getElementById('modalCustomNote').value.trim();
       
       const index = allBookings.findIndex(b => b.id == activeBookingId);
       
       if (index !== -1) {
         allBookings[index].payment_status = paymentStatus;
         allBookings[index].status = status;
+        allBookings[index].therapist_name = therapistName;
+        allBookings[index].driver_name = driverName;
 
-        // صياغة رسالة التنبيه التي ستظهر للعميل بصفحة التنبيهات
+        // صياغة نص الإشعار
         let notifMsg = `تم تحديث حالة حجزك رقم #${activeBookingId} إلى: (${getStatusArabicText(status)}).`;
         if (therapistName) notifMsg += ` المعالجة المسؤولة: ${therapistName}.`;
-        if (paymentStatus === 'paid') notifMsg += ` تم تأكيد استلام المبلغ بنجاح.`;
+        if (driverName) notifMsg += ` السائق المسؤول: ${driverName}.`;
+        if (paymentStatus === 'paid') notifMsg += ` تم تأكيد الدفع بنجاح.`;
+        if (customNote) notifMsg += ` ملاحظة: ${customNote}`;
 
-        // حفظ التحديث والإشعار في جلسة العميل LocalStorage
+        // 1. تحديث التخزين العام spa_bookings
+        try {
+          localStorage.setItem('spa_bookings', JSON.stringify(allBookings));
+        } catch(e) {
+          console.warn('Error saving spa_bookings:', e);
+        }
+
+        // 2. حفظ التحديث والإشعار في جلسة العميل spa_user_session
         try {
           const localSession = localStorage.getItem('spa_user_session');
           if (localSession) {
             const parsed = JSON.parse(localSession);
-            if (parsed && parsed.bookingsList) {
+            if (parsed) {
+              if (parsed.bookingsList) {
+                parsed.bookingsList = parsed.bookingsList.map(b => b.id == activeBookingId ? { 
+                  ...b, 
+                  payment_status: paymentStatus, 
+                  status: status,
+                  therapist_name: therapistName,
+                  driver_name: driverName
+                } : b);
+              }
               
-              // 1. تحديث الحجز
-              parsed.bookingsList = parsed.bookingsList.map(b => b.id == activeBookingId ? { ...b, payment_status: paymentStatus, status: status } : b);
-              
-              // 2. إضافة إشعار جديد في قائمة إشعارات العميل
               if (!parsed.notifications) parsed.notifications = [];
               parsed.notifications.unshift({
                 id: Date.now(),
@@ -444,7 +569,7 @@
             }
           }
         } catch (e) {
-          console.warn('Error updating notification:', e);
+          console.warn('Error updating user session notifications:', e);
         }
 
         alert('✅ تم حفظ التغييرات وإرسال التنبيه إلى العميل بنجاح!');
@@ -455,11 +580,13 @@
     }
 
     function filterTable() {
-      const query = document.getElementById('searchInput').value.toLowerCase();
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
       const filtered = allBookings.filter(b => 
+        (b.id && b.id.toString().toLowerCase().includes(query)) ||
         (b.client_name && b.client_name.toLowerCase().includes(query)) ||
         (b.client_phone && b.client_phone.includes(query)) ||
-        (b.city && b.city.toLowerCase().includes(query))
+        (b.city && b.city.toLowerCase().includes(query)) ||
+        (b.service_title && b.service_title.toLowerCase().includes(query))
       );
       renderBookings(filtered);
     }

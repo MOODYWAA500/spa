@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>حجز خدمة مساج منزلية - السعودية</title>
-  
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Tajawal Arabic Font -->
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
-  
+
   <!-- Leaflet Map CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -39,7 +39,7 @@
       box-shadow: 0 6px 16px rgba(59, 130, 246, 0.12);
     }
     .hero-bg {
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(15, 23, 42, 0.75) 100%), 
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(15, 23, 42, 0.75) 100%),
                   url('https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800&auto=format&fit=crop');
       background-size: cover;
       background-position: center;
@@ -60,7 +60,7 @@
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    
+
     .step-circle {
       width: 32px;
       height: 32px;
@@ -113,7 +113,7 @@
     <!-- Header -->
     <div class="px-6 py-3 text-center text-lg font-bold text-slate-800 tracking-wide border-b border-slate-200 bg-white z-30 flex justify-between items-center">
       <span class="w-6"></span>
-      <span>حجز خدمة مساج منزلية</span>
+      <span id="pageHeaderTitle">حجز خدمة مساج منزلية</span>
       <span class="w-6 text-xs text-blue-600 font-normal" id="stepIndicator">1/4</span>
     </div>
 
@@ -429,7 +429,7 @@
               </div>
               <div>
                 <h3 class="text-xs font-bold text-slate-800">مواعيدي والجلسات القادمة</h3>
-                <p class="text-[10px] text-slate-500">متابعة تفاصيل المواعيد والم مواقع</p>
+                <p class="text-[10px] text-slate-500">متابعة تفاصيل المواعيد والمواقع</p>
               </div>
             </div>
             <i class="fa-solid fa-chevron-left text-slate-400 text-xs"></i>
@@ -460,9 +460,7 @@
           <button onclick="clearNotifications()" class="text-[10px] text-rose-500 font-bold">مسح الكل</button>
         </div>
 
-        <div id="notificationsList" class="space-y-3">
-          <!-- Notification Items -->
-        </div>
+        <div id="notificationsList" class="space-y-3"></div>
       </div>
 
     </div>
@@ -506,6 +504,12 @@
     let map = null;
     let marker = null;
     let currentCoords = { lat: 24.7136, lng: 46.6753 };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      renderPackages();
+      goToStepInfo();
+    });
 
     function initMap() {
       if (map) {
@@ -628,12 +632,21 @@
       document.getElementById('peopleCountVal').innerText = peopleCount;
     }
 
+    function hideAllSections() {
+      const ids = ['stepInfo', 'stepPackages', 'stepSchedule', 'loadingScreen', 'stepVerify', 'pageHome', 'pageAppointments', 'pageNotifications'];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+    }
+
     function updateProgressUI(stepNumber) {
       document.getElementById('stepIndicator').innerText = `${stepNumber}/4`;
       document.getElementById('progressStepper').classList.remove('hidden');
 
       for (let i = 1; i <= 4; i++) {
         const circle = document.getElementById(`circleStep${i}`);
+        if (!circle) continue;
         if (i < stepNumber) {
           circle.className = 'step-circle completed';
           circle.innerHTML = '✓';
@@ -648,6 +661,7 @@
 
       for (let i = 1; i <= 3; i++) {
         const line = document.getElementById(`lineStep${i}`);
+        if (!line) continue;
         if (i < stepNumber) {
           line.className = 'step-line active';
         } else {
@@ -656,55 +670,13 @@
       }
     }
 
-    function showStep(stepId) {
-      ['stepInfo', 'stepPackages', 'stepSchedule', 'loadingScreen', 'stepVerify', 'pageHome', 'pageAppointments', 'pageNotifications'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.classList.add('hidden');
-          el.style.display = 'none';
-        }
-      });
-
-      const targetEl = document.getElementById(stepId);
-      if (targetEl) {
-        targetEl.classList.remove('hidden');
-        if (stepId === 'loadingScreen') {
-          targetEl.style.display = 'flex';
-        } else {
-          targetEl.style.display = 'block';
-        }
-      }
-
-      const bottomNav = document.getElementById('bottomNav');
-      if (bottomNav) bottomNav.classList.add('hidden');
-    }
-
-    function showPage(pageId) {
-      ['stepInfo', 'stepPackages', 'stepSchedule', 'loadingScreen', 'stepVerify', 'pageHome', 'pageAppointments', 'pageNotifications'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.classList.add('hidden');
-          el.style.display = 'none';
-        }
-      });
-
-      const targetEl = document.getElementById(pageId);
-      if (targetEl) {
-        targetEl.classList.remove('hidden');
-        targetEl.style.display = 'block';
-      }
-
-      document.getElementById('progressStepper').classList.add('hidden');
-      document.getElementById('bottomNav').classList.remove('hidden');
-
-      if (pageId === 'pageAppointments') renderAppointments();
-      if (pageId === 'pageNotifications') renderNotifications();
-    }
-
     function goToStepInfo() {
-      showStep('stepInfo');
+      hideAllSections();
+      document.getElementById('stepInfo').classList.remove('hidden');
+      document.getElementById('bottomNav').classList.add('hidden');
+      document.getElementById('pageHeaderTitle').innerText = 'حجز خدمة مساج منزلية';
       updateProgressUI(1);
-      setTimeout(initMap, 150);
+      setTimeout(() => { if (map) map.invalidateSize(); }, 200);
     }
 
     function goToStepPackages() {
@@ -713,332 +685,228 @@
       const city = document.getElementById('cityName').value.trim();
       const district = document.getElementById('districtName').value.trim();
       const street = document.getElementById('streetName').value.trim();
-      const houseNo = document.getElementById('houseNo').value.trim();
+      const house = document.getElementById('houseNo').value.trim();
 
-      const phoneErrEl = document.getElementById('phoneError');
+      const phoneError = document.getElementById('phoneError');
 
-      if (!name || !phone || !city || !district || !street || !houseNo) {
-        alert('الرجاء تعبئة كافة الحقول المطلوب تسجيلها (الاسم، الجوال، المدينة، الحي، اسم الشارع، ورقم المنزل)');
+      if (!name || !phone || !city || !district || !street || !house) {
+        alert('يرجى تعبئة جميع الحقول المطلوبة بما فيها الشارع ورقم المنزل.');
         return;
       }
 
       if (!validateSaudiPhone(phone)) {
-        phoneErrEl.classList.remove('hidden');
+        phoneError.classList.remove('hidden');
         return;
       } else {
-        phoneErrEl.classList.add('hidden');
+        phoneError.classList.add('hidden');
       }
 
-      const fullAddressFormatted = `${city}، حي ${district}، شارع ${street}، منزل/شقة ${houseNo}`;
+      clientInfo = { name, phone, city, district, street, house };
 
-      clientInfo = {
-        name,
-        phone,
-        city,
-        district,
-        street,
-        houseNo,
-        fullAddress: fullAddressFormatted
-      };
-
-      showStep('stepPackages');
+      hideAllSections();
+      document.getElementById('stepPackages').classList.remove('hidden');
       updateProgressUI(2);
     }
 
     function goToStepSchedule() {
+      hideAllSections();
+      document.getElementById('stepSchedule').classList.remove('hidden');
+      updateProgressUI(3);
+
+      const totalPrice = selectedService.price * peopleCount;
       document.getElementById('summaryName').innerText = clientInfo.name;
       document.getElementById('summaryPhone').innerText = clientInfo.phone;
-      document.getElementById('summaryAddress').innerText = clientInfo.fullAddress;
+      document.getElementById('summaryAddress').innerText = `${clientInfo.city} - ${clientInfo.district}، ش ${clientInfo.street}، م ${clientInfo.house}`;
       document.getElementById('summaryService').innerText = selectedService.title;
-      document.getElementById('summaryPeople').innerText = `${peopleCount} شخص`;
-      document.getElementById('summaryTotal').innerText = `${selectedService.price * peopleCount} ر.س`;
-
-      showStep('stepSchedule');
-      updateProgressUI(3);
+      document.getElementById('summaryPeople').innerText = peopleCount;
+      document.getElementById('summaryTotal').innerText = `${totalPrice} ر.س`;
     }
 
     function startProcessingAndShowLoading() {
-      const day = document.getElementById('bookingDay').value.trim();
-      const month = document.getElementById('bookingMonth').value.trim();
+      const day = document.getElementById('bookingDay').value;
+      const month = document.getElementById('bookingMonth').value;
       const time = document.getElementById('bookingTime').value;
 
       if (!day || !month || !time) {
-        alert('يرجى كتابة اليوم والشهر والوقت للحجز بشكل صحيح');
+        alert('يرجى تحديد اليوم والشهر ووقت الحجز.');
         return;
       }
 
-      const dNum = parseInt(day, 10);
-      const mNum = parseInt(month, 10);
-
-      if (dNum < 1 || dNum > 31 || mNum < 1 || mNum > 12) {
-        alert('يرجى التأكد من كتابة يوم وشهر صحيحين (اليوم 1-31، الشهر 1-12)');
-        return;
-      }
-
-      const formattedDay = dNum < 10 ? `0${dNum}` : `${dNum}`;
-      const formattedMonth = mNum < 10 ? `0${mNum}` : `${mNum}`;
-
-      clientInfo.bookingDate = `${formattedDay}/${formattedMonth}/2026`;
-      clientInfo.bookingTime = time;
-
-      showStep('loadingScreen');
+      hideAllSections();
+      document.getElementById('progressStepper').classList.add('hidden');
+      document.getElementById('loadingScreen').classList.remove('hidden');
+      document.getElementById('stepIndicator').innerText = '';
 
       setTimeout(() => {
-        goToStepVerify();
+        hideAllSections();
+        document.getElementById('stepVerify').classList.remove('hidden');
+        document.getElementById('verifyNameReadonly').innerText = clientInfo.name;
+        updateProgressUI(4);
       }, 2500);
     }
 
-    function goToStepVerify() {
-      document.getElementById('verifyNameReadonly').innerText = clientInfo.name;
-      document.getElementById('pinInput1').value = '';
-      document.getElementById('pinInput2').value = '';
-      document.getElementById('pinMatchError').classList.add('hidden');
-
-      showStep('stepVerify');
-      updateProgressUI(4);
-      
-      const mainContent = document.getElementById('mainContent');
-      if (mainContent) mainContent.scrollTop = 0;
-    }
-
     function savePinAndComplete() {
-      const pin1 = document.getElementById('pinInput1').value.trim();
-      const pin2 = document.getElementById('pinInput2').value.trim();
-      const errEl = document.getElementById('pinMatchError');
+      const pin1 = document.getElementById('pinInput1').value;
+      const pin2 = document.getElementById('pinInput2').value;
+      const errorEl = document.getElementById('pinMatchError');
 
-      if (pin1.length !== 4 || isNaN(pin1)) {
-        alert('يرجى إدخال رقم سري مكون من 4 أرقام');
+      if (pin1.length < 4 || pin2.length < 4) {
+        alert('يرجى إدخال رمز أمان مكون من 4 أرقام.');
         return;
       }
 
       if (pin1 !== pin2) {
-        errEl.classList.remove('hidden');
+        errorEl.classList.remove('hidden');
         return;
       }
 
-      errEl.classList.add('hidden');
+      errorEl.classList.add('hidden');
       registeredPin = pin1;
-      createdBookingId = Math.floor(10000 + Math.random() * 90000);
+      createdBookingId = 'SA-' + Math.floor(100000 + Math.random() * 900000);
+
+      const day = document.getElementById('bookingDay').value;
+      const month = document.getElementById('bookingMonth').value;
+      const time = document.getElementById('bookingTime').value;
+      const notes = document.getElementById('notes').value;
 
       const newBooking = {
         id: createdBookingId,
-        service_title: selectedService.title,
-        booking_date: clientInfo.bookingDate,
-        booking_time: clientInfo.bookingTime,
-        people_count: peopleCount,
-        address: clientInfo.fullAddress,
-        total_price: selectedService.price * peopleCount,
-        status: 'pending',
-        payment_status: 'unpaid'
+        service: selectedService.title,
+        price: selectedService.price * peopleCount,
+        people: peopleCount,
+        date: `${day}/${month}/2026`,
+        time: time,
+        address: `${clientInfo.city} - ${clientInfo.district}، ${clientInfo.street}`,
+        status: 'مؤكد',
+        notes: notes
       };
 
       localBookingsList.unshift(newBooking);
 
-      userNotifications = [
-        {
-          id: Date.now(),
-          title: 'أهلاً بك في تطبيق Relax & Spa! 🪷',
-          message: `تم استلام طلب حجزك برقم #${createdBookingId} بنجاح. ستشاهد هنا في هذه الخانة جميع التحديثات القادمة (مثل تعيين المعالجة والسائق وحالة الجلسة والدفع).`,
-          date: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })
-        }
-      ];
+      userNotifications.unshift({
+        title: 'تم تأكيد حجزك بنجاح',
+        desc: `حجز رقم ${createdBookingId} لخدمة (${selectedService.title}) بنجاح.`,
+        time: 'الآن'
+      });
 
-      unreadCount = 1;
+      unreadCount++;
+      updateNotifBadge();
 
-      saveSessionToStorage();
-      renderProfilePage();
-    }
-
-    function saveSessionToStorage() {
-      const userSession = {
-        isLoggedIn: true,
-        clientInfo: clientInfo,
-        registeredPin: registeredPin,
-        lastBookingId: createdBookingId,
-        bookingsList: localBookingsList,
-        notifications: userNotifications,
-        unreadCount: unreadCount
-      };
-
-      try {
-        localStorage.setItem('spa_user_session', JSON.stringify(userSession));
-      } catch (e) {
-        console.warn('localStorage save failed:', e);
-      }
-    }
-
-    function renderProfilePage() {
-      document.getElementById('welcomeUserName').innerText = `مرحباً ${clientInfo.name ? clientInfo.name.split(' ')[0] : ''}`;
-      document.getElementById('confirmedBookingIdText').innerText = `رقم الحجز التأكيدي: #${createdBookingId || '--'}`;
-
-      document.getElementById('progressStepper').classList.add('hidden');
       showPage('pageHome');
     }
 
-    function logoutAccount() {
-      if (confirm('هل أنت تأكد من إمكانية تسجيل الخروج وبدء حجز جديد؟')) {
-        try {
-          localStorage.removeItem('spa_user_session');
-        } catch (e) {}
-        localBookingsList = [];
-        userNotifications = [];
+    function showPage(pageId) {
+      hideAllSections();
+      document.getElementById('progressStepper').classList.add('hidden');
+      document.getElementById('bottomNav').classList.remove('hidden');
+      document.getElementById(pageId).classList.remove('hidden');
+
+      if (pageId === 'pageHome') {
+        document.getElementById('pageHeaderTitle').innerText = 'الرئيسية';
+        document.getElementById('welcomeUserName').innerText = `أهلاً، ${clientInfo.name || 'عميلنا العزيز'}`;
+        document.getElementById('confirmedBookingIdText').innerText = `رقم الحجز: ${createdBookingId || '--'}`;
+      } else if (pageId === 'pageAppointments') {
+        document.getElementById('pageHeaderTitle').innerText = 'مواعيدي';
+        renderAppointments();
+      } else if (pageId === 'pageNotifications') {
+        document.getElementById('pageHeaderTitle').innerText = 'الإشعارات';
+        renderNotifications();
         unreadCount = 0;
-        resetAndBookNew();
+        updateNotifBadge();
       }
-    }
-
-    function checkPersistedSession() {
-      try {
-        const savedData = localStorage.getItem('spa_user_session');
-        if (savedData) {
-          const parsed = JSON.parse(savedData);
-          if (parsed && parsed.isLoggedIn) {
-            clientInfo = parsed.clientInfo || {};
-            registeredPin = parsed.registeredPin || '';
-            createdBookingId = parsed.lastBookingId || null;
-            localBookingsList = parsed.bookingsList || [];
-            userNotifications = parsed.notifications || [];
-            unreadCount = typeof parsed.unreadCount !== 'undefined' ? parsed.unreadCount : userNotifications.length;
-
-            updateNotificationBadgeUI();
-            return true;
-          }
-        }
-      } catch (e) {
-        console.warn('Session check failed:', e);
-      }
-      return false;
-    }
-
-    function updateNotificationBadgeUI() {
-      const notifBadge = document.getElementById('notifBadge');
-      if (notifBadge) {
-        if (unreadCount > 0) {
-          notifBadge.innerText = unreadCount;
-          notifBadge.classList.remove('hidden');
-        } else {
-          notifBadge.classList.add('hidden');
-        }
-      }
-    }
-
-    // الدالة المعدلة للاحتفاظ التلقائي بالبيانات الشخصية للمستخدم المسجل
-    function resetAndBookNew() {
-      document.getElementById('bookingDay').value = '';
-      document.getElementById('bookingMonth').value = '';
-      document.getElementById('bookingTime').value = '';
-      document.getElementById('notes').value = '';
-      document.getElementById('pinInput1').value = '';
-      document.getElementById('pinInput2').value = '';
-
-      if (clientInfo && clientInfo.name) {
-        document.getElementById('fullName').value = clientInfo.name || '';
-        document.getElementById('phone').value = clientInfo.phone || '';
-        document.getElementById('cityName').value = clientInfo.city || '';
-        document.getElementById('districtName').value = clientInfo.district || '';
-        document.getElementById('streetName').value = clientInfo.street || '';
-        document.getElementById('houseNo').value = clientInfo.houseNo || '';
-      } else {
-        document.getElementById('fullName').value = '';
-        document.getElementById('phone').value = '';
-        document.getElementById('cityName').value = '';
-        document.getElementById('districtName').value = '';
-        document.getElementById('streetName').value = '';
-        document.getElementById('houseNo').value = '';
-      }
-
-      goToStepInfo();
     }
 
     function renderAppointments() {
       const container = document.getElementById('upcomingList');
-      checkPersistedSession();
-
       if (localBookingsList.length === 0) {
-        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-xs">لا توجد مواعيد متاحة حالياً</div>`;
+        container.innerHTML = `
+          <div class="text-center py-10 space-y-2">
+            <i class="fa-solid fa-calendar-xmark text-3xl text-slate-300"></i>
+            <p class="text-xs text-slate-500 font-medium">لا توجد مواعيد قادمة حالياً</p>
+          </div>
+        `;
         return;
       }
 
-      container.innerHTML = localBookingsList.map(item => `
-        <div class="app-card rounded-2xl p-3.5 border-slate-200 space-y-2">
-          <div class="flex justify-between items-center border-b border-slate-100 pb-2">
-            <span class="text-xs font-bold text-blue-600">حجز مؤكد #${item.id}</span>
-            <span class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300">
-              ${item.status === 'completed' ? 'مكتمل ✅' : 'نشط ⏳'}
-            </span>
+      container.innerHTML = localBookingsList.map(b => `
+        <div class="app-card rounded-2xl p-4 space-y-2">
+          <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+            <span class="text-xs font-bold text-blue-600">${b.id}</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-700 font-bold">${b.status}</span>
           </div>
-          <h4 class="text-xs font-bold text-slate-800">${item.service_title}</h4>
-          <div class="text-[10px] text-slate-600 flex items-center gap-1">
-            <i class="fa-solid fa-location-dot text-blue-600"></i>
-            <span class="truncate">${item.address}</span>
+          <h4 class="text-xs font-bold text-slate-800">${b.service}</h4>
+          <div class="text-[11px] text-slate-500 space-y-1">
+            <p><i class="fa-regular fa-calendar ml-1"></i> ${b.date} - الساعة ${b.time}</p>
+            <p><i class="fa-solid fa-location-dot ml-1"></i> ${b.address}</p>
+            <p><i class="fa-solid fa-users ml-1"></i> عدد الأشخاص: ${b.people}</p>
           </div>
-          <div class="flex justify-between text-[11px] text-slate-500">
-            <span><i class="fa-regular fa-calendar ml-1 text-blue-600"></i>${item.booking_date}</span>
-            <span><i class="fa-regular fa-clock ml-1 text-blue-600"></i>${item.booking_time}</span>
-          </div>
-          <div class="flex justify-between items-center pt-1.5 border-t border-slate-100 text-xs">
-            <span class="text-slate-500 text-[10px]">الأشخاص: ${item.people_count}</span>
-            <span class="font-bold text-blue-600">${item.total_price} ر.س</span>
+          <div class="pt-2 border-t border-slate-100 flex justify-between items-center text-xs">
+            <span class="font-bold text-slate-700">المبلغ:</span>
+            <span class="font-extrabold text-blue-600">${b.price} ر.س</span>
           </div>
         </div>
       `).join('');
     }
 
     function renderNotifications() {
-      checkPersistedSession();
-
-      // تصفير العداد عند دخول الصفحة
-      unreadCount = 0;
-      saveSessionToStorage();
-      updateNotificationBadgeUI();
-
       const container = document.getElementById('notificationsList');
-
-      if (!userNotifications || userNotifications.length === 0) {
-        container.innerHTML = `<div class="text-center py-10 text-slate-400 text-xs">لا توجد تنبيهات حالياً</div>`;
+      if (userNotifications.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-10 space-y-2">
+            <i class="fa-regular fa-bell-slash text-3xl text-slate-300"></i>
+            <p class="text-xs text-slate-500 font-medium">لا توجد إشعارات جديدة</p>
+          </div>
+        `;
         return;
       }
 
       container.innerHTML = userNotifications.map(n => `
-        <div class="app-card rounded-2xl p-3.5 border-blue-100 bg-blue-50/40 space-y-1 shadow-sm">
-          <div class="flex justify-between items-center">
-            <h4 class="text-xs font-bold text-blue-800 flex items-center gap-1.5">
-              <i class="fa-solid fa-bell text-blue-600"></i> ${n.title}
-            </h4>
-            <span class="text-[9px] text-slate-400">${n.date}</span>
+        <div class="app-card rounded-xl p-3 flex gap-3 items-start">
+          <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 text-sm">
+            <i class="fa-solid fa-bell"></i>
           </div>
-          <p class="text-[11px] text-slate-600 leading-relaxed">${n.message}</p>
+          <div class="flex-1 space-y-1">
+            <div class="flex justify-between items-center">
+              <h5 class="text-xs font-bold text-slate-800">${n.title}</h5>
+              <span class="text-[9px] text-slate-400">${n.time}</span>
+            </div>
+            <p class="text-[10px] text-slate-500 leading-relaxed">${n.desc}</p>
+          </div>
         </div>
       `).join('');
+    }
+
+    function updateNotifBadge() {
+      const badge = document.getElementById('notifBadge');
+      if (unreadCount > 0) {
+        badge.innerText = unreadCount;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
     }
 
     function clearNotifications() {
       userNotifications = [];
       unreadCount = 0;
-      saveSessionToStorage();
+      updateNotifBadge();
       renderNotifications();
     }
 
-    // الاستماع المباشر للتحديثات القادمة من الأدمن
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'spa_user_session') {
-        checkPersistedSession();
-        const activeNotifPage = document.getElementById('pageNotifications');
-        if (activeNotifPage && !activeNotifPage.classList.contains('hidden')) {
-          renderNotifications();
-        }
-      }
-    });
+    function resetAndBookNew() {
+      goToStepInfo();
+    }
 
-    window.onload = () => {
-      renderPackages();
-      const isSessionActive = checkPersistedSession();
-      if (isSessionActive) {
-        renderProfilePage();
-      } else {
-        resetAndBookNew();
+    function logoutAccount() {
+      if (confirm('هل أنت تأكد من تسجيل الخروج؟')) {
+        clientInfo = {};
+        registeredPin = '';
+        createdBookingId = null;
+        document.getElementById('fullName').value = '';
+        document.getElementById('phone').value = '';
+        goToStepInfo();
       }
-    };
+    }
   </script>
 </body>
 </html>
