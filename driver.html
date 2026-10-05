@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>واجهة السائق - ريلاكس سبا</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Font: Cairo -->
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex justify-center items-start sm:py-6">
+
+  <!-- حاوية تطبيق الجوال للسائق -->
+  <div class="w-full max-w-md bg-gray-950 min-h-screen sm:min-h-0 sm:rounded-3xl shadow-2xl overflow-hidden border border-gray-800 flex flex-col justify-between">
+    
+    <div>
+      <!-- الهيدر واختيار السائق -->
+      <div class="bg-gradient-to-b from-gray-900 to-gray-950 p-6 border-b border-gray-800/80 space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span> لوحة السائق
+          </span>
+          <button onclick="fetchMyRides()" class="text-xs bg-gray-800/80 hover:bg-gray-800 text-gray-300 px-3 py-1.5 rounded-full border border-gray-700/50 transition flex items-center gap-1">
+            🔄 تحديث
+          </button>
+        </div>
+
+        <div>
+          <h1 class="font-black text-xl text-white tracking-wide">مهام التوصيل اليومية</h1>
+          <p class="text-xs text-gray-400 font-medium mt-0.5">اختر حسابك واعرض رحلاتك اليومية بسهولة</p>
+        </div>
+
+        <!-- تحديد السائق -->
+        <div class="flex items-center gap-2 bg-gray-900 p-2.5 rounded-2xl border border-gray-800">
+          <span class="text-base">👤</span>
+          <select id="driverSelect" onchange="fetchMyRides()" class="bg-transparent text-xs text-gray-200 font-bold w-full focus:outline-none cursor-pointer">
+            <option value="" class="bg-gray-900 text-gray-300">جاري تحميل السائقين...</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- حاوية البطاقات والرحلات -->
+      <div class="p-4 space-y-4">
+        <div id="ridesContainer" class="space-y-4">
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-8 text-center text-xs text-gray-400">
+            جاري تحميل البيانات...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- الشريط السفلي للتنقل -->
+    <div class="bg-gray-900/95 border-t border-gray-800/80 px-6 py-3 flex justify-around text-center text-xs backdrop-blur-md">
+      <button class="text-amber-400 font-bold flex flex-col items-center gap-1">
+        <span class="text-lg">🚗</span>
+        الرحلات
+      </button>
+      <button class="text-gray-400 font-medium hover:text-gray-200 flex flex-col items-center gap-1 transition">
+        <span class="text-lg">👤</span>
+        الملف الشخصي
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+
+    // 1. جلب قائمة السائقين
+    async function loadDrivers() {
+      const select = document.getElementById('driverSelect');
+      try {
+        const res = await fetch(`${API_URL}/admin/staff`);
+        const staff = await res.json();
+        const drivers = staff.filter(s => s.role === 'driver');
+
+        if (drivers.length === 0) {
+          select.innerHTML = `<option value="" class="bg-gray-900 text-gray-300">لا يوجد سائقين مسجلين</option>`;
+          return;
+        }
+
+        select.innerHTML = drivers.map(d => `
+          <option value="${d.full_name}" data-id="${d.id}" class="bg-gray-900 text-gray-200">${d.full_name}</option>
+        `).join('');
+
+        fetchMyRides();
+      } catch (err) {
+        console.error('خطأ في جلب قائمة السائقين:', err);
+        select.innerHTML = `<option value="" class="bg-gray-900 text-gray-300">خطأ في الاتصال بالسيرفر</option>`;
+      }
+    }
+
+    // 2. جلب الرحلات
+    async function fetchMyRides() {
+      const selectedDriver = document.getElementById('driverSelect').value;
+      const container = document.getElementById('ridesContainer');
+
+      if (!selectedDriver) {
+        container.innerHTML = `
+          <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 text-center text-xs text-gray-400">
+            يرجى اختيار السائق من القائمة أعلاه لعرض التفاصيل.
+          </div>`;
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/admin/bookings`);
+        const bookings = await res.json();
+
+        const myRides = bookings.filter(b => b.driver_name === selectedDriver);
+
+        if (!Array.isArray(myRides) || myRides.length === 0) {
+          container.innerHTML = `
+            <div class="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 text-center space-y-2">
+              <span class="text-3xl block">🚘</span>
+              <p class="text-gray-300 text-xs font-bold">لا توجد رحلات توصيل موكلة إليك حالياً</p>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = myRides.map(b => {
+          const formattedDate = new Date(b.booking_date).toISOString().split('T')[0];
+          
+          return `
+            <div class="border border-gray-800 bg-gray-900/90 rounded-2xl p-4 shadow-xl space-y-4 relative overflow-hidden backdrop-blur-sm">
+              <div class="absolute top-0 right-0 w-1.5 h-full ${getAccentColor(b.status)}"></div>
+
+              <!-- شريط الحالة والخدمة -->
+              <div class="flex justify-between items-start gap-2">
+                <div>
+                  <p class="text-[10px] text-gray-400 font-medium">جلسة التوصيل</p>
+                  <h3 class="font-extrabold text-sm text-white">${b.service_title}</h3>
+                  <p class="text-[10px] text-amber-400/90 font-medium">الأفراد/المعدات: ${b.people_count || 1}</p>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-black border ${getStatusBadgeStyle(b.status)}">
+                  ${getStatusText(b.status)}
+                </span>
+              </div>
+
+              <!-- التفاصيل (المعالج/العميل/العنوان) -->
+              <div class="space-y-3 bg-gray-950/70 p-3.5 rounded-xl border border-gray-800/80 text-xs">
+                
+                <!-- الموظفة/المعالجة -->
+                <div class="flex items-start gap-2.5">
+                  <span class="text-base">👩‍💼</span>
+                  <div class="space-y-0.5">
+                    <p class="text-gray-400 text-[10px]">المعالجة المرافقة:</p>
+                    <p class="font-bold text-gray-200">${b.therapist_name || 'لم تحدد بعد'}</p>
+                  </div>
+                </div>
+
+                <div class="border-t border-gray-800/80 my-2"></div>
+
+                <!-- العميل والموعد -->
+                <div class="flex items-start gap-2.5">
+                  <span class="text-base">👤</span>
+                  <div class="space-y-0.5 w-full">
+                    <div class="flex justify-between items-center">
+                      <p class="font-bold text-amber-400">${b.client_name}</p>
+                      <a href="tel:${b.client_phone}" class="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-md font-bold">
+                        📞 اتصال
+                      </a>
+                    </div>
+                    <p class="text-gray-300 text-[11px] mt-1">📍 ${b.location_address}</p>
+                    <p class="text-[10px] text-gray-400 mt-1">⏰ الموعد: <span class="text-gray-200 font-semibold">${formattedDate} - ${b.booking_time}</span></p>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- أزرار تحديث الحالة -->
+              <div class="grid grid-cols-3 gap-2 pt-1 text-[11px]">
+                <button onclick="updateStatus('${b.id}', '${b.therapist_id}', '${b.driver_id}', 'on_the_way')" 
+                  class="py-2.5 bg-purple-900/40 hover:bg-purple-800/50 text-purple-200 border border-purple-500/30 font-bold rounded-xl transition text-center">
+                  🚗 في الطريق
+                </button>
+                <button onclick="updateStatus('${b.id}', '${b.therapist_id}', '${b.driver_id}', 'arrived')" 
+                  class="py-2.5 bg-blue-900/40 hover:bg-blue-800/50 text-blue-200 border border-blue-500/30 font-bold rounded-xl transition text-center">
+                  📍 وصلت
+                </button>
+                <button onclick="updateStatus('${b.id}', '${b.therapist_id}', '${b.driver_id}', 'completed')" 
+                  class="py-2.5 bg-emerald-900/40 hover:bg-emerald-800/50 text-emerald-200 border border-emerald-500/30 font-bold rounded-xl transition text-center">
+                  ✅ اكتمل
+                </button>
+              </div>
+
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        console.error('خطأ في جلب الرحلات:', err);
+        container.innerHTML = `
+          <div class="bg-gray-900/60 border border-red-900/40 rounded-2xl p-6 text-center text-xs text-red-400">
+            تعذر جلب الرحلات من السيرفر.
+          </div>`;
+      }
+    }
+
+    // 3. تحديث الحالة مع ضم driver_id و therapist_id بوضوح
+    async function updateStatus(bookingId, therapistId, driverId, newStatus) {
+      try {
+        const select = document.getElementById('driverSelect');
+        const selectedOption = select.options[select.selectedIndex];
+        const selectedDriverId = selectedOption.getAttribute('data-id');
+
+        const payload = {
+          status: newStatus
+        };
+
+        const activeDriverId = (driverId && driverId !== 'undefined' && driverId !== 'null') ? driverId : selectedDriverId;
+        if (activeDriverId) {
+          payload.driver_id = activeDriverId;
+        }
+
+        if (therapistId && therapistId !== 'undefined' && therapistId !== 'null') {
+          payload.therapist_id = therapistId;
+        }
+
+        const res = await fetch(`${API_URL}/admin/bookings/${bookingId}/assign`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (res.ok && (data.success || data.id || data.booking)) {
+          fetchMyRides();
+        } else {
+          alert('❌ فشل تحديث الحالة: ' + (data.error || data.message || 'خطأ غير معروف'));
+        }
+      } catch (err) {
+        console.error('خطأ أثناء التحديث:', err);
+        alert('❌ خطأ في الاتصال بالسيرفر أثناء التحديث');
+      }
+    }
+
+    // تنسيقات الحالات والشرائط
+    function getAccentColor(status) {
+      switch(status) {
+        case 'assigned': return 'bg-amber-500';
+        case 'on_the_way': return 'bg-purple-500';
+        case 'arrived': return 'bg-blue-500';
+        case 'completed': return 'bg-emerald-500';
+        default: return 'bg-gray-600';
+      }
+    }
+
+    function getStatusBadgeStyle(status) {
+      switch(status) {
+        case 'assigned': return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+        case 'on_the_way': return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
+        case 'arrived': return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+        case 'completed': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+        default: return 'bg-gray-800 text-gray-300 border-gray-700';
+      }
+    }
+
+    function getStatusText(status) {
+      switch(status) {
+        case 'pending': return 'معلق';
+        case 'assigned': return 'تم التعيين';
+        case 'on_the_way': return 'في الطريق';
+        case 'arrived': return 'وصل للموقع';
+        case 'in_progress': return 'الجلسة جارية';
+        case 'completed': return 'مكتملة';
+        case 'cancelled': return 'ملغاة';
+        default: return status;
+      }
+    }
+
+    window.onload = loadDrivers;
+  </script>
+</body>
+</html>

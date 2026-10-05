@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>واجهة المعالجة - جدول الجلسات</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen p-4 md:p-6">
+
+  <div class="max-w-3xl mx-auto space-y-6">
+    
+    <!-- الهيدر واختيار المعالجة -->
+    <div class="bg-white rounded-xl shadow-md p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">واجهة المعالجة</h1>
+        <p class="text-sm text-gray-500">متابعة الجلسات الموكلة وتحديث الحالة</p>
+      </div>
+
+      <div class="flex items-center gap-2 w-full md:w-auto">
+        <label class="text-sm font-semibold whitespace-nowrap">المعالج/ة:</label>
+        <select id="therapistSelect" onchange="fetchMyTasks()" class="border rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 w-full md:w-auto">
+          <option value="">جاري تحميل القائمة...</option>
+        </select>
+        <button onclick="fetchMyTasks()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm p-2 rounded-lg">
+          🔄
+        </button>
+      </div>
+    </div>
+
+    <!-- قائمة المهام والجلسات -->
+    <div id="tasksContainer" class="space-y-4">
+      <div class="bg-white rounded-xl shadow-md p-6 text-center text-gray-500">
+        جاري تحميل البيانات...
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+
+    // 1. جلب قائمة المعالجات لتعبئة القائمة المنسدلة
+    async function loadTherapists() {
+      const select = document.getElementById('therapistSelect');
+      try {
+        const res = await fetch(`${API_URL}/admin/staff`);
+        const staff = await res.json();
+        const therapists = staff.filter(s => s.role === 'therapist');
+
+        if (therapists.length === 0) {
+          select.innerHTML = `<option value="">لا يوجد معالجات مسجلات</option>`;
+          return;
+        }
+
+        select.innerHTML = therapists.map(t => `
+          <option value="${t.full_name}">${t.full_name}</option>
+        `).join('');
+
+        // جلب المهام لأول معالجة أوتوماتيكياً
+        fetchMyTasks();
+      } catch (err) {
+        console.error('خطأ في جلب قائمة المعالجات:', err);
+        select.innerHTML = `<option value="">خطأ في الاتصال بالسيرفر</option>`;
+      }
+    }
+
+    // 2. جلب المهام الموكلة للمعالجة المحددة
+    async function fetchMyTasks() {
+      const selectedTherapist = document.getElementById('therapistSelect').value;
+      const container = document.getElementById('tasksContainer');
+
+      if (!selectedTherapist) {
+        container.innerHTML = `<div class="bg-white rounded-xl p-6 text-center text-gray-500">يرجى اختيار المعالجة من القائمة أعلاه.</div>`;
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/admin/bookings`);
+        const bookings = await res.json();
+
+        // تصفية الجلسات الخاصة بهذه المعالجة فقط
+        const myBookings = bookings.filter(b => b.therapist_name === selectedTherapist);
+
+        if (!Array.isArray(myBookings) || myBookings.length === 0) {
+          container.innerHTML = `
+            <div class="bg-white rounded-xl p-8 text-center shadow-sm">
+              <p class="text-gray-500 text-lg font-semibold">لا توجد جلسات موكلة إليك حالياً 🧘‍♀️</p>
+            </div>`;
+          return;
+        }
+
+        container.innerHTML = myBookings.map(b => {
+          const formattedDate = new Date(b.booking_date).toISOString().split('T')[0];
+          
+          return `
+            <div class="bg-white rounded-xl shadow-md p-6 border-r-4 ${getBorderColor(b.status)}">
+              
+              <!-- رأس بطاقة الجلسة -->
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <h3 class="font-bold text-lg text-gray-900">${b.service_title}</h3>
+                  <span class="text-xs text-gray-500">${b.people_count || 1} شخص</span>
+                </div>
+                <span class="px-3 py-1 rounded-full text-xs font-bold ${getStatusBadge(b.status)}">
+                  ${getStatusText(b.status)}
+                </span>
+              </div>
+
+              <!-- تفاصيل الطلب -->
+              <div class="space-y-2 text-sm text-gray-600 mb-4 bg-gray-50 p-4 rounded-lg">
+                <div class="flex justify-between">
+                  <span>👤 العميل:</span>
+                  <span class="font-semibold text-gray-800">${b.client_name}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>📞 التواصل:</span>
+                  <a href="tel:${b.client_phone}" class="text-indigo-600 font-semibold underline">${b.client_phone}</a>
+                </div>
+                <div class="flex justify-between">
+                  <span>📅 الموعد:</span>
+                  <span class="font-semibold">${formattedDate} - ${b.booking_time}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>🚘 السائق المنسق:</span>
+                  <span class="font-semibold text-purple-700">${b.driver_name || 'لم يحدد بعد'}</span>
+                </div>
+                <div class="pt-2 border-t">
+                  <span class="block text-xs text-gray-500">📍 العنوان:</span>
+                  <p class="font-semibold text-gray-800 mt-1">${b.location_address}</p>
+                </div>
+                ${b.notes ? `
+                  <div class="pt-2 border-t text-amber-800 bg-amber-50 p-2 rounded">
+                    <strong>📝 ملاحظات العميل:</strong> ${b.notes}
+                  </div>` : ''}
+              </div>
+
+              <!-- أزرار تحديث الحالة -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
+                <button onclick="updateStatus('${b.id}', '${b.therapist_id}', '${b.driver_id}', 'on_the_way')" 
+                  class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold py-2 px-3 rounded-lg transition">
+                  🚘 في الطريق
+                </button>
+                <button onclick="updateStatus('${b.id}', '${b.therapist_id}', '${b.driver_id}', 'arrived')" 
+                  class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-3 rounded-lg transition">
+                  📍 وصلت للموقع
+                </button>
+                <button onclick="updateStatus('${b.id}', '${b.therapist_id}', '${b.driver_id}', 'in_progress')" 
+                  class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold py-2 px-3 rounded-lg transition">
+                  💆‍♀️ بدء الجلسة
+                </button>
+                <button onclick="updateStatus('${b.id}', '${b.therapist_id}', '${b.driver_id}', 'completed')" 
+                  class="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-2 px-3 rounded-lg transition">
+                  ✅ إنهاء الجلسة
+                </button>
+              </div>
+
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        console.error('خطأ في جلب المهام:', err);
+        container.innerHTML = `<div class="bg-white rounded-xl p-6 text-center text-red-500">تعذر جلب الجلسات من السيرفر.</div>`;
+      }
+    }
+
+    // 3. إرسال تحديث حالة الجلسة للسيرفر
+    async function updateStatus(bookingId, therapistId, driverId, newStatus) {
+      try {
+        const res = await fetch(`${API_URL}/admin/bookings/${bookingId}/assign`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            therapist_id: therapistId || null,
+            driver_id: driverId || null,
+            status: newStatus
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          fetchMyTasks();
+        } else {
+          alert('❌ فشل تحديث الحالة: ' + data.error);
+        }
+      } catch (err) {
+        alert('❌ خطأ في الاتصال بالسيرفر أثناء التحديث');
+      }
+    }
+
+    // ألوان الحالات والحدود
+    function getBorderColor(status) {
+      switch(status) {
+        case 'assigned': return 'border-blue-500';
+        case 'on_the_way': return 'border-purple-500';
+        case 'arrived': return 'border-indigo-500';
+        case 'in_progress': return 'border-teal-500';
+        case 'completed': return 'border-green-500';
+        default: return 'border-amber-500';
+      }
+    }
+
+    function getStatusBadge(status) {
+      switch(status) {
+        case 'assigned': return 'bg-blue-100 text-blue-800';
+        case 'on_the_way': return 'bg-purple-100 text-purple-800';
+        case 'arrived': return 'bg-indigo-100 text-indigo-800';
+        case 'in_progress': return 'bg-teal-100 text-teal-800';
+        case 'completed': return 'bg-green-100 text-green-800';
+        default: return 'bg-amber-100 text-amber-800';
+      }
+    }
+
+    function getStatusText(status) {
+      switch(status) {
+        case 'pending': return 'معلق';
+        case 'assigned': return 'تم التعيين';
+        case 'on_the_way': return 'في الطريق';
+        case 'arrived': return 'وصلت للموقع';
+        case 'in_progress': return 'جاري الجلسة';
+        case 'completed': return 'مكتملة';
+        case 'cancelled': return 'ملغاة';
+        default: return status;
+      }
+    }
+
+    // التشغيل التلقائي عند فتح الصفحة
+    window.onload = loadTherapists;
+  </script>
+</body>
+</html>
